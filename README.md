@@ -35,6 +35,13 @@ On this workstation, fusermount3 can detach successfully but return a BusyBox
 before treating that as a mount failure; the acceptance test verifies actual
 detachment. Do not delete fixture directories while mounted.
 
+## Workstation starting pattern
+
+[Initial Alpine config](configs/alpine-workstation.json) defines C:, Programs:,
+Libraries: and Sys_Libraries: using this workstation’s existing directories.
+See [mapping policy and limits](docs/workstation-mappings.md), including the
+planned Libraries/System child and current symlink limitation.
+
 ## Mapping configuration
 
 See [examples/assigns.json](examples/assigns.json). Version 1 uses JSON with named
