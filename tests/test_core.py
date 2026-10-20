@@ -84,5 +84,29 @@ class ResolverTests(unittest.TestCase):
     def test_permission_error_not_hidden(self):
         self.a.chmod(0)
         try:
-            with self.assertRaises(PermissionError): self.r.listing(('Music',))
+            self.assertEqual(self.r.listing(('Music',)), [])
+            self.assertEqual(self.r.status()['Music'][0]['state'], 'permission-required')
+            with self.assertRaises(PermissionError): self.r.open_read(('Music','same'))
         finally: self.a.chmod(0o700)
+
+    def test_denied_lower_source_keeps_known_upper_files(self):
+        self.b.chmod(0)
+        try:
+            self.assertEqual(self.r.listing(('Music',)), ['nested', 'same'])
+            fd = self.r.open_read(('Music','same'))
+            os.close(fd)
+            with self.assertRaises(PermissionError): self.r.open_read(('Music','unique'))
+        finally: self.b.chmod(0o700)
+
+    def test_all_denied_is_error(self):
+        self.a.chmod(0); self.b.chmod(0)
+        try:
+            with self.assertRaises(PermissionError): self.r.listing(('Music',))
+        finally: self.a.chmod(0o700); self.b.chmod(0o700)
+
+    def test_denied_at_config_load(self):
+        self.b.chmod(0)
+        try:
+            registry = Registry({'version':1,'assigns':{'Music':{'sources':[str(self.a),str(self.b)]}}})
+            self.assertEqual(registry.status()['Music'][1]['state'], 'permission-required')
+        finally: self.b.chmod(0o700)

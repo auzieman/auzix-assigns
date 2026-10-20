@@ -57,7 +57,10 @@ The mount is read-only, including create, rename, unlink and metadata changes.
 Symlinks are visible to lstat but following/reading their targets returns ELOOP;
 this intentionally avoids presenting writable escape paths through the view.
 Device/socket/FIFO opens are refused. Underlying permissions still apply, and
-permission failures are reported rather than silently changing precedence.
+permission failures never silently change file precedence. Listings omit inaccessible
+or ambiguous entries; `status` reports source-root access. An inaccessible higher-
+priority source blocks fallback reads, while known higher-priority entries remain
+available when a lower source is inaccessible. All sources denied returns EACCES.
 
 Configuration is fixed for a session: edit and remount. Backing file additions
 and removals are visible without remounting. Directory handles keep a bounded
@@ -90,3 +93,29 @@ and icon associations, then an EFL assign editor. Newest-file duplicate policy,
 GUI, APK, autostart and system path changes are not implemented.
 
 Original implementation: GPL-3.0-only; see [LICENSE](LICENSE). Dependencies retain their own licenses.
+
+## EFM and RAM-backed desktop trial
+
+```sh
+python3 examples/desktop_demo.py start
+python3 -m assignfs -c build/desktop-demo/assigns.json status
+python3 examples/desktop_demo.py stop
+```
+
+Start creates disposable Music/Programs fixtures, a tiny RAM source under existing
+`/dev/shm`, and a read-only view at `build/desktop-demo/view`, then asks EFM to open
+it. Programs contains explanatory text, not executable application launchers.
+The RAM view is read-only too; this is not a separately mounted writable RAM disk.
+No sudo, autostart, real collections or shell-path changes are involved.
+
+The process runs at reduced scheduling priority, with 512 MiB virtual address-space
+and 256-descriptor limits; backing IO uses at most four workers. Limits constrain
+this demo but do not guarantee protection against every FUSE/kernel/desktop bug.
+The demo remains mounted until stopped or the session ends. Stop leaves the disk
+fixtures, removes its known RAM note, and preserves any user-added RAM files.
+
+`list` and `status` print source-root health as JSON. They inspect a freshly loaded
+configuration, not the live mount's pinned identities. Nested permission errors
+remain operation-specific; there is not yet an EFM warning badge or status IPC.
+A source may load if its root can be statted even when it cannot be listed; roots
+hidden behind unsearchable parent directories still fail configuration loading.

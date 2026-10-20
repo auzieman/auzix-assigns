@@ -10,6 +10,8 @@ def main():
     parser.add_argument('-c', '--config', required=True)
     sub = parser.add_subparsers(dest='command', required=True)
     sub.add_parser('check')
+    sub.add_parser('status')
+    sub.add_parser('list')
     for name in ('ls', 'inspect'):
         sub.add_parser(name).add_argument('path', nargs='?', default='')
     sub.add_parser('mount').add_argument('mountpoint')
@@ -18,6 +20,8 @@ def main():
         registry = Registry.load(args.config)
         if args.command == 'check':
             print(json.dumps({'valid': True, 'assigns': list(registry.sources), 'mode': 'read-only'}))
+        elif args.command in ('status', 'list'):
+            print(json.dumps(registry.status(), indent=2))
         elif args.command == 'mount':
             from .fuse import mount
             mount(registry, args.mountpoint)

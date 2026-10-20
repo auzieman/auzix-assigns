@@ -9,3 +9,9 @@ policies, GUI and metadata remain separate follow-on stages.
 Acceptance: unit tests plus actual mounted fixture reads/listings, conflicts,
 blocked mutations, disappearing source, live updates and verified cleanup.
 No actual music collections mounted, boot changes, service activation or file moves.
+
+2026-10-20: user authorized building out a controlled desktop trial. Added partial
+permission-aware browsing and source status; tested with fixtures. Disposable EFM
+trial includes a RAM source under existing /dev/shm, with process limits and a
+start/stop command. Real workstation mappings remain unmounted. User review of
+EFM behavior is next; no production-beta claim.

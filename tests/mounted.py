@@ -53,6 +53,14 @@ with tempfile.TemporaryDirectory(prefix='assigns-acceptance-') as tmp:
                 assert opened.read()==b'first'
                 assert (mount/'Music/same').read_bytes()==b'second'
                 (root/'offline').rename(a)
+            b.chmod(0)
+            try:
+                assert (mount/'Music/same').read_bytes()==b'first'
+                assert 'unique' not in os.listdir(mount/'Music')
+                try: (mount/'Music/unique').read_bytes()
+                except OSError as error: assert error.errno==errno.EACCES
+                else: raise AssertionError('inaccessible priority silently bypassed')
+            finally: b.chmod(0o700)
             assert hashes()==before,'backing file bytes changed'
             print('PASS: native ls/open, recursive union, priority, live changes, read-only operations, symlink refusal, source disappearance and open handle lifetime')
         finally:

@@ -17,6 +17,7 @@ class AssignFS(f.Operations):
         self.handles = {}
         self.next_handle = 1
         self.started = time.time_ns()
+        self.io_limit = trio.CapacityLimiter(4)
 
     def inode(self, parts):
         if parts not in self.inodes:
@@ -29,7 +30,7 @@ class AssignFS(f.Operations):
 
     async def io(self, function, *args):
         try:
-            return await trio.to_thread.run_sync(function, *args)
+            return await trio.to_thread.run_sync(function, *args, limiter=self.io_limit)
         except OSError as error:
             raise f.FUSEError(error.errno or errno.EIO) from error
 
@@ -80,7 +81,7 @@ class AssignFS(f.Operations):
             try:
                 attr = await self.lookup(self.inode(parts), os.fsencode(name))
             except f.FUSEError as error:
-                if error.errno == errno.ENOENT:
+                if error.errno in (errno.ENOENT, errno.EACCES, errno.EPERM):
                     continue
                 raise
             if not f.readdir_reply(token, os.fsencode(name), attr, offset + 1):
