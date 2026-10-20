@@ -15,3 +15,8 @@ permission-aware browsing and source status; tested with fixtures. Disposable EF
 trial includes a RAM source under existing /dev/shm, with process limits and a
 start/stop command. Real workstation mappings remain unmounted. User review of
 EFM behavior is next; no production-beta claim.
+
+2026-10-20: user authorized a real-ish dry run after reviewing the sample demo.
+Scope: existing workstation config, unprivileged read-only mount, root listing
+comparison, installed E-control desktop-file byte comparison, then EFM browse.
+No writes, execution tests, PATH/loader changes, or uncapped RAM assign.

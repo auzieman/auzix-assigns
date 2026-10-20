@@ -3,6 +3,7 @@
 import errno
 import hashlib
 import json
+import mmap
 import os
 from pathlib import Path
 import subprocess
@@ -35,8 +36,13 @@ with tempfile.TemporaryDirectory(prefix='assigns-acceptance-') as tmp:
                 if process.poll() is not None: log.seek(0);raise RuntimeError(log.read())
                 time.sleep(.05)
             assert os.path.ismount(mount),'mount timed out'
+            assert os.statvfs(mount).f_flag & os.ST_RDONLY
+            assert os.statvfs(mount).f_bavail == 0
             subprocess.run(['ls','-a',str(mount/'Music')],check=True)
             assert (mount/'Music/same').read_bytes()==b'first'
+            with (mount/'Music/same').open('rb') as mapped_file:
+                with mmap.mmap(mapped_file.fileno(),0,access=mmap.ACCESS_READ) as mapped:
+                    assert mapped[:]==b'first'
             assert sorted(p.name for p in (mount/'Music/nested').iterdir())==['a','b']
             for operation in [lambda:(mount/'Music/new').write_text('no'),lambda:(mount/'Music/same').unlink(),lambda:(mount/'Music/same').rename(mount/'Music/renamed')]:
                 try: operation()

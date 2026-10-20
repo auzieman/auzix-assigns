@@ -53,3 +53,22 @@ RAM fixture uses existing /dev/shm; no new tmpfs/system mount was configured.
 Still experimental: no write semantics, working symlink targets, inode reclamation,
 EFM metadata integration, long-running stress/reconnect coverage, or production
 beta acceptance. The desktop trial is for observing ordinary read-only browsing.
+
+## Real mappings and EFM desktop-entry parsing — 2026-10-20
+
+Real read-only mount validated: C 1220 entries, Programs 99, Libraries 2638,
+Sys_Libraries 8. Listings matched resolver results, E-control desktop bytes
+matched the installed source, and kernel read-only flag was verified. Added
+statfs support: the logical view reports no allocatable capacity instead of
+inventing pooled backing storage totals.
+
+EFM icon investigation found a real interoperability defect: FUSE direct_io
+made mmap fail with ENODEV, and efreet_desktop_new consequently returned NULL.
+After disabling direct_io (keep_cache remains false), the installed E-control
+launcher and its mounted copy both mapped 211 bytes and parsed successfully
+through native libefreet. Live fixture acceptance including mmap passed.
+Symlinked Flatpak desktop entries remain unsupported; this fix addresses ordinary
+files only. EFM was asked to reopen Programs; visual rendering awaits user review.
+
+Old trial was busy in EFM and required targeted lazy detach before remount;
+no desktop process was killed. Close old EFM views to release retained references.

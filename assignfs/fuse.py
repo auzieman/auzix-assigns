@@ -94,13 +94,27 @@ class AssignFS(f.Operations):
         if flags & (os.O_WRONLY | os.O_RDWR | os.O_TRUNC | os.O_APPEND):
             raise f.FUSEError(errno.EROFS)
         fd = await self.io(self.registry.open_read, self.paths[inode])
-        return f.FileInfo(fh=fd, direct_io=True, keep_cache=False)
+        # Eina/Efreet map desktop files; direct_io disables mmap on this kernel.
+        # Drop cached pages on each open so backing edits are refreshed.
+        return f.FileInfo(fh=fd, direct_io=False, keep_cache=False)
 
     async def read(self, fh, off, size):
         return await self.io(os.pread, fh, size, off)
 
     async def release(self, fh):
         os.close(fh)
+
+    async def statfs(self, ctx):
+        # This is a read-only logical view, not a storage pool. Reporting the sum
+        # of backing sizes would double-count shared filesystems and imply space
+        # is writable here. Zero capacity means no allocatable storage in this view.
+        result = f.StatvfsData()
+        result.f_bsize = result.f_frsize = 4096
+        result.f_blocks = result.f_bfree = result.f_bavail = 0
+        result.f_files = len(self.paths)
+        result.f_ffree = result.f_favail = 0
+        result.f_namemax = 255
+        return result
 
     async def readlink(self, inode, ctx):
         # Do not turn a read-only union into an escape to a writable backing path.

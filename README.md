@@ -64,7 +64,9 @@ available when a lower source is inaccessible. All sources denied returns EACCES
 
 Configuration is fixed for a session: edit and remount. Backing file additions
 and removals are visible without remounting. Directory handles keep a bounded
-name snapshot; attributes and regular-file reads bypass FUSE caching. Existing
+name snapshot; attribute caching is disabled, and file pages are invalidated on open.
+Mapped reads are supported for Eina/Efreet desktop-entry parsing. Already-open
+files and mappings do not promise immediate coherence with external edits. Existing
 file handles retain their opened file if a source disappears. Missing sources
 are skipped; a different device/inode at a source root returns ESTALE and requires
 remounting. All sources missing yields ENOENT. Nested mount replacement and
@@ -119,3 +121,21 @@ configuration, not the live mount's pinned identities. Nested permission errors
 remain operation-specific; there is not yet an EFM warning badge or status IPC.
 A source may load if its root can be statted even when it cannot be listed; roots
 hidden behind unsearchable parent directories still fail configuration loading.
+
+## Real workstation dry run
+
+```sh
+python3 examples/workstation_trial.py start
+python3 examples/workstation_trial.py status
+python3 examples/workstation_trial.py stop
+```
+
+This separate trial exposes actual C, Programs, Libraries and Sys_Libraries
+sources from configs/alpine-workstation.json at build/workstation-trial/view.
+It verifies all four top-level merged listings, compares the E-control launcher
+bytes to the installed source, and checks the kernel read-only flag before
+requesting EFM. It does not run applications or attempt writes as tests.
+The same process resource limits as the sample demo apply. RAM is excluded until
+it has a dedicated capacity limit. Symlinks remain visible but cannot be followed;
+this is browsing validation, not a replacement PATH or application launcher.
+Stop the sample demo before starting this view to avoid confusion. No autostart.
