@@ -39,6 +39,8 @@ with tempfile.TemporaryDirectory(prefix='assigns-acceptance-') as tmp:
             assert os.statvfs(mount).f_flag & os.ST_RDONLY
             assert os.statvfs(mount).f_bavail == 0
             subprocess.run(['ls','-a',str(mount/'Music')],check=True)
+            assert (mount/'Music:/same').read_bytes()==b'first'
+            assert (mount/'music:/same').read_bytes()==b'first'
             assert (mount/'Music/same').read_bytes()==b'first'
             with (mount/'Music/same').open('rb') as mapped_file:
                 with mmap.mmap(mapped_file.fileno(),0,access=mmap.ACCESS_READ) as mapped:
@@ -60,6 +62,7 @@ with tempfile.TemporaryDirectory(prefix='assigns-acceptance-') as tmp:
                 assert (mount/'Music/same').read_bytes()==b'second'
                 (root/'offline').rename(a)
             b.chmod(0)
+            time.sleep(1.1)  # bounded metadata visibility lag
             try:
                 assert (mount/'Music/same').read_bytes()==b'first'
                 assert 'unique' not in os.listdir(mount/'Music')

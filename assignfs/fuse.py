@@ -6,6 +6,7 @@ import stat
 import time
 import pyfuse3 as f
 import trio
+from .cache import Cache
 
 
 class AssignFS(f.Operations):
@@ -16,6 +17,7 @@ class AssignFS(f.Operations):
         self.inodes = {(): 1}
         self.handles = {}
         self.next_handle = 1
+        self.cache = Cache()
         self.started = time.time_ns()
         self.io_limit = trio.CapacityLimiter(4)
 
@@ -34,8 +36,22 @@ class AssignFS(f.Operations):
         except OSError as error:
             raise f.FUSEError(error.errno or errno.EIO) from error
 
+    async def cached(self, kind, parts):
+        key = (kind, parts)
+        hit, value = self.cache.get(key)
+        if hit:
+            return value
+        function = self.registry.metadata if kind == 'stat' else self.registry.snapshot
+        value = await self.io(function, parts)
+        if kind != 'stat' or value is None or stat.S_ISDIR(value.st_mode):
+            self.cache.put(key, value, 1 if kind == 'stat' else len(value) + 1)
+        return value
+
     async def getattr(self, inode, ctx=None):
-        st = await self.io(self.registry.metadata, self.paths[inode])
+        st = await self.cached('stat', self.paths[inode])
+        return self.attributes(inode, st)
+
+    def attributes(self, inode, st):
         attr = f.EntryAttributes()
         attr.st_ino = inode
         attr.generation = 0
@@ -61,14 +77,14 @@ class AssignFS(f.Operations):
         else:
             parts = await self.io(self.registry.parts, '/'.join(parent + (os.fsdecode(name),)))
         # Validate before allocating an inode.
-        await self.io(self.registry.metadata, parts)
+        await self.cached('stat', parts)
         return await self.getattr(self.inode(parts))
 
     async def opendir(self, inode, ctx):
         if len(self.handles) >= 256:
             raise f.FUSEError(errno.EMFILE)
         parts = self.paths[inode]
-        names = await self.io(self.registry.listing, parts)
+        names = await self.cached('list', parts)
         handle = self.next_handle
         self.next_handle += 1
         self.handles[handle] = (parts, names)
@@ -77,13 +93,8 @@ class AssignFS(f.Operations):
     async def readdir(self, fh, start_id, token):
         parts, names = self.handles[fh]
         for offset in range(start_id, len(names)):
-            name = names[offset]
-            try:
-                attr = await self.lookup(self.inode(parts), os.fsencode(name))
-            except f.FUSEError as error:
-                if error.errno in (errno.ENOENT, errno.EACCES, errno.EPERM):
-                    continue
-                raise
+            name, metadata = names[offset]
+            attr = self.attributes(self.inode(parts + (name,)), metadata)
             if not f.readdir_reply(token, os.fsencode(name), attr, offset + 1):
                 break
 

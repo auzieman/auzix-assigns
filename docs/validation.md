@@ -72,3 +72,21 @@ files only. EFM was asked to reopen Programs; visual rendering awaits user revie
 
 Old trial was busy in EFM and required targeted lazy detach before remount;
 no desktop process was killed. Close old EFM views to release retained references.
+
+## Cache/colon/RAM activation — 2026-10-20
+
+17 unit tests plus the real disposable mount suite passed during implementation.
+Tests cover cache expiry/bounds, colon aliases, mmap, permission changes and a
+source disappearing while open. The first regular-file metadata cache approach
+failed the source-size-switch test and was discarded; regular-file attributes
+remain uncached. Directory snapshot metadata eliminates per-entry worker trips.
+
+Resumed after usage-limit interruption and activated the tested implementation.
+Real listings matched C 1220, Programs 99, Libraries 2638, Sys_Libraries 8, RAM 0.
+E-control desktop bytes and kernel read-only flag verified. Literal C:, c:,
+Programs: and wrapped RAM: commands completed successfully.
+
+Same C directory measurement before: 4.453, 2.959, 4.021 seconds. After activation:
+0.163, 0.033, 0.034 seconds. This is a small sequential listing measurement, not
+a general filesystem benchmark. Dedicated auzix-ram tmpfs confirmed at 2 GiB,
+empty at activation. No shell PATH changes, application execution or boot setup.

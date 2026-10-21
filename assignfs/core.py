@@ -49,10 +49,15 @@ class Registry:
             return cls(json.load(f))
 
     def parts(self, value):
-        if ':' in value:
+        value = value.strip('/')
+        head = value.split('/', 1)[0]
+        if ':' in head:
             name, tail = value.split(':', 1)
-            value = name + '/' + tail.lstrip('/')
-        parts = tuple(value.strip('/').split('/')) if value.strip('/') else ()
+            matching = [key for key in self.sources if key.casefold() == name.casefold()]
+            if len(matching) != 1:
+                fail(errno.ENOENT, 'Unknown or ambiguous assign')
+            value = matching[0] + ('/' + tail.lstrip('/') if tail.lstrip('/') else '')
+        parts = tuple(value.split('/')) if value else ()
         if any(p in ('', '.', '..') or '\x00' in p for p in parts):
             fail(errno.EINVAL, 'Invalid path component')
         if len(parts) > 65:
@@ -124,9 +129,12 @@ class Registry:
             return None
         return self.candidates(parts, partial=len(parts) == 1)[0][1]
 
-    def listing(self, parts):
+    def snapshot(self, parts):
+        return self.listing(parts, with_metadata=True)
+
+    def listing(self, parts, with_metadata=False):
         if not parts:
-            return sorted(self.sources)
+            return [(name, self.metadata((name,))) for name in sorted(self.sources)] if with_metadata else sorted(self.sources)
         matches = self.candidates(parts, partial=len(parts) == 1)
         if not stat.S_ISDIR(matches[0][1].st_mode):
             fail(errno.ENOTDIR, 'Not a directory')
@@ -154,8 +162,8 @@ class Registry:
         visible = []
         for name in sorted(names):
             try:
-                self.metadata(parts + (name,))
-                visible.append(name)
+                metadata = self.metadata(parts + (name,))
+                visible.append((name, metadata) if with_metadata else name)
             except (PermissionError, FileNotFoundError):
                 continue
         return visible

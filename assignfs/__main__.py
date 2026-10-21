@@ -2,6 +2,9 @@
 import argparse
 import json
 import sys
+import os
+import subprocess
+from pathlib import Path
 from .core import Registry
 
 
@@ -15,6 +18,12 @@ def main():
     for name in ('ls', 'inspect'):
         sub.add_parser(name).add_argument('path', nargs='?', default='')
     sub.add_parser('mount').add_argument('mountpoint')
+    path_parser = sub.add_parser('path')
+    path_parser.add_argument('mountpoint')
+    path_parser.add_argument('path')
+    run_parser = sub.add_parser('exec')
+    run_parser.add_argument('mountpoint')
+    run_parser.add_argument('argv', nargs=argparse.REMAINDER)
     args = parser.parse_args()
     try:
         registry = Registry.load(args.config)
@@ -22,6 +31,25 @@ def main():
             print(json.dumps({'valid': True, 'assigns': list(registry.sources), 'mode': 'read-only'}))
         elif args.command in ('status', 'list'):
             print(json.dumps(registry.status(), indent=2))
+        elif args.command in ('path', 'exec'):
+            root = Path(args.mountpoint).resolve()
+            if not os.path.ismount(root):
+                raise ValueError('Expected a live assign mount')
+            def translate(value):
+                head = value.split(':', 1)[0]
+                if ':' in value and any(head.casefold() == name.casefold() for name in registry.sources):
+                    return str(root.joinpath(*registry.parts(value)))
+                return value
+            if args.command == 'path':
+                result = translate(args.path)
+                if result == args.path:
+                    raise ValueError('Expected a known assign such as C:')
+                print(result)
+            else:
+                command = args.argv
+                if command and command[0] == '--': command = command[1:]
+                if not command: raise ValueError('Expected a command')
+                return subprocess.run([translate(value) for value in command]).returncode
         elif args.command == 'mount':
             from .fuse import mount
             mount(registry, args.mountpoint)

@@ -14,6 +14,8 @@ project = Path(__file__).resolve().parents[1]
 base = project/'build/workstation-trial'
 view = base/'view'
 config = project/'configs/alpine-workstation.json'
+trial_config = base/'assigns.json'
+if trial_config.exists(): config = trial_config
 state = base/'session.json'
 
 

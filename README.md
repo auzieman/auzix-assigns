@@ -139,3 +139,38 @@ The same process resource limits as the sample demo apply. RAM is excluded until
 it has a dedicated capacity limit. Symlinks remain visible but cannot be followed;
 this is browsing validation, not a replacement PATH or application launcher.
 Stop the sample demo before starting this view to avoid confusion. No autostart.
+
+## Cached browsing and colon names
+
+Within the mounted view, ordinary commands now accept case-insensitive assign
+prefixes: `ls C:`, `ls c:`, `ls Programs:`, `ls RAM:` and `ls C:/subdirectory`.
+Canonical names remain in root listings (C, Programs, RAM); aliases do not create
+duplicate icons. The names of files below an assign remain case-sensitive.
+These are mount-relative aliases, not globally recognized shell paths.
+
+From the project directory, translate arguments explicitly from anywhere:
+
+```sh
+python3 -m assignfs -c build/workstation-trial/assigns.json path build/workstation-trial/view C:
+python3 -m assignfs -c build/workstation-trial/assigns.json exec build/workstation-trial/view -- ls Programs:
+```
+
+The wrapper translates complete arguments with known assign prefixes, without
+shell evaluation. It does not translate embedded `--option=C:...` expressions,
+globs, or install aliases into your shell. Ordinary `ls C:` outside the mounted
+view still looks for a local directory named C:.
+
+Directory snapshots reuse metadata during enumeration. A one-second LRU cache
+holds at most 16,000 weighted entries (each directory member counts toward the
+limit). Regular-file getattr and all file opens resolve fresh; cached listing
+metadata can lag backing changes by up to a second. Existing directory handles
+retain their snapshots. Failed operations are not cached. No content cache is
+implemented here; mapped reads retain the previously documented kernel behavior.
+
+The current local trial config includes RAM, backed by `build/ram-drive`: a
+separate tmpfs capped at 2 GiB and 65,536 inodes, user-owned and mounted with
+nosuid,nodev,noexec. It allocates on demand, not 2 GiB upfront. The backing folder
+is writable directly; RAM: is read-only through Assigns. It is volatile and has
+no boot persistence. Stopping Assigns does not erase or unmount that RAM backing.
+The tracked workstation config stays portable; build/workstation-trial/assigns.json
+records this host-specific RAM addition and is selected automatically when present.

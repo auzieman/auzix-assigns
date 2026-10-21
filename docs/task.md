@@ -20,3 +20,8 @@ EFM behavior is next; no production-beta claim.
 Scope: existing workstation config, unprivileged read-only mount, root listing
 comparison, installed E-control desktop-file byte comparison, then EFM browse.
 No writes, execution tests, PATH/loader changes, or uncapped RAM assign.
+
+Cache and colon alias pass completed: one-second bounded directory snapshots,
+mount-relative C:/c:/Programs:/RAM:, explicit path/exec CLI translation. Real
+trial activated with 2 GiB-capped RAM backing, read-only through Assigns. Source
+files remain in their natural filesystems. No global shell rewriting installed.
