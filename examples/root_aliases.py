@@ -9,6 +9,7 @@ project = Path(__file__).resolve().parents[1]
 view = project/'build/workstation-trial/view'
 links = {Path('/'+name+':'): view/name for name in ('C','Programs','Libraries','Sys_Libraries','RAM')}
 links[Path('/c:')] = view/'C'
+links[Path('/RAM:')] = project/'build/ram-drive'
 
 
 def matches(link, target):
@@ -22,6 +23,8 @@ def main():
     if action == 'install':
         if not os.path.ismount(view):
             raise RuntimeError('Start the workstation assign mount first')
+        if not os.path.ismount(project/'build/ram-drive'):
+            raise RuntimeError('Start the dedicated RAM filesystem first')
         for link,target in links.items():
             if not target.is_dir(): raise RuntimeError('Missing assign: '+str(target))
             if os.path.lexists(link) and not matches(link,target):

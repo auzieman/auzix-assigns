@@ -201,3 +201,23 @@ python3 examples/root_aliases.py install
 
 Install/remove use sudo for the root links only; the filesystem continues running
 as the desktop user. No operating-system directories are moved or replaced.
+
+## Writable RAM desktop integration — 2026-10-22
+
+`/RAM:` now points directly to `build/ram-drive`, bypassing the read-only FUSE
+mirror. The desktop and EFM Favorites contain **RAM Disk**, using the installed
+Enlightenment-X media-memory icon. Normal-user drag/drop and writes are available
+there. The same RAM directory inside the merged trial remains read-only; use the
+desktop shortcut or `/RAM:` when writing.
+
+The dedicated tmpfs is user-owned (mode 0700), size=2G, nr_inodes=65536,
+noswap,nosuid,nodev,noexec. noswap could not be enabled by remount, so the verified
+empty RAM filesystem was recreated and the FUSE mirror refreshed. No stored user
+files were discarded. Normal-user create/read/delete and desktop-file validation
+passed. No executable startup helper or boot service was installed.
+
+Files are volatile. Native EFM copying is limited by filesystem capacity but no
+custom preflight has been added: an oversized copy can fail after a partial write.
+After reboot/unmount the backing path is an ordinary directory until tmpfs is
+mounted again; do not use the shortcut as RAM storage without checking the mount.
+The icon references an existing installed asset; none was copied into this repo.

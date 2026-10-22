@@ -30,3 +30,9 @@ files remain in their natural filesystems. No global shell rewriting installed.
 /C:, /c:, /Programs:, /Libraries:, /Sys_Libraries:, /RAM: to the existing live
 trial. Verified all listings and inode equivalence from /tmp. No collisions,
 root directory replacement, PATH changes, privileges for FUSE, or boot changes.
+
+2026-10-22 RAM usability: direct /RAM: alias now targets capped user-owned tmpfs
+rather than read-only FUSE. Added Desktop/EFM favorite RAM Disk link with installed
+media-memory icon. Empty mount recreated with noswap after remount rejected that
+flag; normal-user write/read/delete verified. No boot persistence or write support
+for other assigns. Refresh FUSE after RAM source identity changes.
