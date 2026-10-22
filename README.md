@@ -174,3 +174,30 @@ is writable directly; RAM: is read-only through Assigns. It is volatile and has
 no boot persistence. Stopping Assigns does not erase or unmount that RAM backing.
 The tracked workstation config stays portable; build/workstation-trial/assigns.json
 records this host-specific RAM addition and is selected automatically when present.
+
+## Root navigation aliases
+
+On this workstation, `/C:` (also `/c:`), `/Programs:`, `/Libraries:`,
+`/Sys_Libraries:` and `/RAM:` link to the corresponding trial directories.
+For example, `ls /C:` or `cd /Programs:` works from any working directory.
+Bare `C:` remains relative unless passed through the explicit assign wrapper.
+
+These are navigation links, not block devices or PATH entries. They expose the
+same unprivileged, read-only FUSE view and retain its symlink limitations. They
+are usable by the mounting user; this is not a multi-user system mount. Links
+persist on disk, but become unavailable when the trial mount is stopped or after
+reboot until it is started again. No boot service was installed, and the RAM
+backing remains volatile. Do not add these experimental views to root's PATH.
+
+The idempotent helper refuses existing conflicting paths and removes only links
+whose targets match this project:
+
+```sh
+python3 examples/root_aliases.py status
+python3 examples/root_aliases.py remove
+# With the trial mounted again:
+python3 examples/root_aliases.py install
+```
+
+Install/remove use sudo for the root links only; the filesystem continues running
+as the desktop user. No operating-system directories are moved or replaced.

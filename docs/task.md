@@ -25,3 +25,8 @@ Cache and colon alias pass completed: one-second bounded directory snapshots,
 mount-relative C:/c:/Programs:/RAM:, explicit path/exec CLI translation. Real
 trial activated with 2 GiB-capped RAM backing, read-only through Assigns. Source
 files remain in their natural filesystems. No global shell rewriting installed.
+
+2026-10-22: user requested base-path navigation. Installed scoped root symlinks
+/C:, /c:, /Programs:, /Libraries:, /Sys_Libraries:, /RAM: to the existing live
+trial. Verified all listings and inode equivalence from /tmp. No collisions,
+root directory replacement, PATH changes, privileges for FUSE, or boot changes.
