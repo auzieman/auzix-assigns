@@ -1,4 +1,4 @@
-# Auzix Assigns — working read-only experiment
+# Auzix Assigns — alpha
 
 Amiga-inspired named locations backed by ordered directories. A real FUSE mount
 presents their combined contents to ordinary Linux applications. Existing files
@@ -40,7 +40,7 @@ detachment. Do not delete fixture directories while mounted.
 [Initial Alpine config](configs/alpine-workstation.json) defines C:, Programs:,
 Libraries: and Sys_Libraries: using this workstation’s existing directories.
 See [mapping policy and limits](docs/workstation-mappings.md), including the
-planned Libraries/System child and current symlink limitation.
+planned Libraries/System child and supported symbolic-link behavior.
 
 ## Mapping configuration
 
@@ -54,8 +54,9 @@ Case is significant. Hidden files are included. No background content hashing.
 `Music/Albums/track` path. No global colon-path translation is installed.
 
 The mount is read-only, including create, rename, unlink and metadata changes.
-Symlinks are visible to lstat but following/reading their targets returns ELOOP;
-this intentionally avoids presenting writable escape paths through the view.
+Relative symlinks that stay within the same assign are followed through the
+read-only view. Absolute links and relative links escaping an assign are blocked;
+genuine link cycles report ELOOP.
 Device/socket/FIFO opens are refused. Underlying permissions still apply, and
 permission failures never silently change file precedence. Listings omit inaccessible
 or ambiguous entries; `status` reports source-root access. An inaccessible higher-
@@ -183,7 +184,7 @@ For example, `ls /C:` or `cd /Programs:` works from any working directory.
 Bare `C:` remains relative unless passed through the explicit assign wrapper.
 
 These are navigation links, not block devices or PATH entries. They expose the
-same unprivileged, read-only FUSE view and retain its symlink limitations. They
+same unprivileged, read-only FUSE view and its symlink boundaries. They
 are usable by the mounting user; this is not a multi-user system mount. Links
 persist on disk, but become unavailable when the trial mount is stopped or after
 reboot until it is started again. No boot service was installed, and the RAM
@@ -221,3 +222,8 @@ custom preflight has been added: an oversized copy can fail after a partial writ
 After reboot/unmount the backing path is an ordinary directory until tmpfs is
 mounted again; do not use the shortcut as RAM storage without checking the mount.
 The icon references an existing installed asset; none was copied into this repo.
+
+Relative symbolic links within an assign are supported in new mount sessions,
+including library version links. Absolute links and relative links that escape
+an assign are blocked; genuine cycles still report a symbolic-link loop. Existing
+mounts must be restarted to load this change.

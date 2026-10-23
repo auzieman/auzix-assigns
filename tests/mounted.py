@@ -23,6 +23,11 @@ with tempfile.TemporaryDirectory(prefix='assigns-acceptance-') as tmp:
     (b/'nested/b').write_bytes(b'two')
     (b/'unique').write_bytes(b'unique')
     (a/'loop').symlink_to('loop')
+    (a/'lib.so.1').symlink_to('lib.so.1.2')
+    (a/'lib.so.1.2').write_bytes(b'library')
+    (a/'escape').symlink_to('../outside')
+    (a/'absolute').symlink_to('/etc/passwd')
+    (a/'nested/link').symlink_to('../lib.so.1')
     def hashes():
         return {str(p.relative_to(root)):hashlib.sha256(p.read_bytes()).hexdigest() for base in (a,b) for p in base.rglob('*') if p.is_file() and not p.is_symlink()}
     before=hashes()
@@ -45,11 +50,18 @@ with tempfile.TemporaryDirectory(prefix='assigns-acceptance-') as tmp:
             with (mount/'Music/same').open('rb') as mapped_file:
                 with mmap.mmap(mapped_file.fileno(),0,access=mmap.ACCESS_READ) as mapped:
                     assert mapped[:]==b'first'
-            assert sorted(p.name for p in (mount/'Music/nested').iterdir())==['a','b']
+            assert sorted(p.name for p in (mount/'Music/nested').iterdir())==['a','b','link']
             for operation in [lambda:(mount/'Music/new').write_text('no'),lambda:(mount/'Music/same').unlink(),lambda:(mount/'Music/same').rename(mount/'Music/renamed')]:
                 try: operation()
                 except OSError as e: assert e.errno in (errno.EROFS,errno.EACCES)
                 else: raise AssertionError('write succeeded')
+            assert os.readlink(mount/'Music/lib.so.1') == 'lib.so.1.2'
+            assert (mount/'Music/lib.so.1').read_bytes() == b'library'
+            assert (mount/'Music/nested/link').read_bytes() == b'library'
+            for link in ('escape', 'absolute'):
+                try: os.readlink(mount/'Music'/link)
+                except OSError as e: assert e.errno == errno.EACCES
+                else: raise AssertionError('unsafe symlink exposed')
             try: (mount/'Music/loop').read_bytes()
             except OSError as e: assert e.errno==errno.ELOOP
             else: raise AssertionError('symlink followed')
@@ -71,7 +83,7 @@ with tempfile.TemporaryDirectory(prefix='assigns-acceptance-') as tmp:
                 else: raise AssertionError('inaccessible priority silently bypassed')
             finally: b.chmod(0o700)
             assert hashes()==before,'backing file bytes changed'
-            print('PASS: native ls/open, recursive union, priority, live changes, read-only operations, symlink refusal, source disappearance and open handle lifetime')
+            print('PASS: native ls/open, recursive union, priority, live changes, read-only operations, safe symlinks and escape refusal, source disappearance and open handle lifetime')
         finally:
             if os.path.ismount(mount):
                 result = subprocess.run(['fusermount3','-u',str(mount)],capture_output=True,text=True,timeout=10)

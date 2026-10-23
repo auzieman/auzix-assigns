@@ -49,9 +49,6 @@ python3 -m assignfs -c configs/alpine-workstation.json ls Programs:
 python3 -m assignfs -c configs/alpine-workstation.json inspect Programs:e-control.desktop
 ```
 
-This is configuration preparation and listing validation only. Existing symlink
-restrictions matter: Flatpak exports, BusyBox command names and library SONAMEs
-are often symlinks, which the current FUSE implementation lists but refuses to
-follow. Therefore these views are not yet accepted as executable/launcher/linker
-search paths. Safe symlink semantics are the next prerequisite for that use.
-No PATH, dynamic-loader configuration, mount or service is changed by this file.
+Relative links that remain inside an assign work in new mount sessions; absolute
+links and links that escape an assign are blocked. This view is read-only and is
+not yet a substitute for executable or dynamic-linker search paths.

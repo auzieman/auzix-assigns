@@ -50,7 +50,7 @@ measurement, not a throughput benchmark. Demo limits: 512 MiB address space,
 256 descriptors, nice +5; adapter worker concurrency limited to four.
 RAM fixture uses existing /dev/shm; no new tmpfs/system mount was configured.
 
-Still experimental: no write semantics, working symlink targets, inode reclamation,
+Still experimental: no write semantics, unrestricted symlink targets, inode reclamation,
 EFM metadata integration, long-running stress/reconnect coverage, or production
 beta acceptance. The desktop trial is for observing ordinary read-only browsing.
 

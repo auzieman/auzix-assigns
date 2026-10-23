@@ -36,3 +36,10 @@ rather than read-only FUSE. Added Desktop/EFM favorite RAM Disk link with instal
 media-memory icon. Empty mount recreated with noswap after remount rejected that
 flag; normal-user write/read/delete verified. No boot persistence or write support
 for other assigns. Refresh FUSE after RAM source identity changes.
+
+2026-10-23: permit relative symbolic links that stay within the same assign;
+absolute links and links escaping an assign remain blocked. Kernel link traversal
+retains normal cycle detection and stays on the read-only mount. Verified unit
+suite, disposable mounted fixtures including loops and escapes, and a separate
+real workstation mount where libzstd.so.1 resolves to libzstd.so.1.5.7. The
+existing workstation mount runs the previous process until it is restarted.

@@ -199,6 +199,31 @@ class Registry:
         finally:
             os.close(parent)
 
+    def readlink(self, parts):
+        """Return relative links that stay inside this assign's read-only view."""
+        source, st = self.candidates(parts)[0]
+        if not stat.S_ISLNK(st.st_mode):
+            fail(errno.EINVAL, 'Not a symbolic link')
+        parent = self.branch_fd(source, parts[1:-1])
+        try:
+            target = os.readlink(parts[-1], dir_fd=parent)
+            current = os.stat(parts[-1], dir_fd=parent, follow_symlinks=False)
+            if (current.st_dev, current.st_ino) != (st.st_dev, st.st_ino):
+                fail(errno.ESTALE, 'Link changed during lookup; retry')
+        finally:
+            os.close(parent)
+        if os.path.isabs(target):
+            fail(errno.EACCES, 'Absolute symbolic link is outside the assign view')
+        depth = len(parts) - 2
+        for component in target.split('/'):
+            if component == '..':
+                depth -= 1
+                if depth < 0:
+                    fail(errno.EACCES, 'Symbolic link escapes assign')
+            elif component not in ('', '.'):
+                depth += 1
+        return os.fsencode(target)
+
     def inspect(self, parts):
         if not parts:
             return {'assigns': list(self.sources)}

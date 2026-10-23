@@ -128,8 +128,7 @@ class AssignFS(f.Operations):
         return result
 
     async def readlink(self, inode, ctx):
-        # Do not turn a read-only union into an escape to a writable backing path.
-        raise f.FUSEError(errno.ELOOP)
+        return await self.io(self.registry.readlink, self.paths[inode])
 
 
 def mount(registry, path):
